@@ -1,38 +1,47 @@
-/*global module, require, console, Promise */
-'use strict';
-const childProcess = require('child_process'),
-	execPromise = function (command) {
-		return new Promise((resolve, reject) => {
-			childProcess.exec(command, (err, result) => {
-				if (err) {
-					reject(err);
-				} else {
-					resolve(result && String(result).trim());
-				}
-			});
-		});
-	},
-	spawnPromise = function (command, argsarray, envOptions) {
-		return new Promise((resolve, reject) => {
-			console.log('executing', command, argsarray.join(' '));
-			const childProc = childProcess.spawn(command, argsarray, envOptions || {env: process.env, cwd: process.cwd()}),
-				resultBuffers = [];
-			childProc.stdout.on('data', buffer => {
-				console.log(buffer.toString());
-				resultBuffers.push(buffer);
-			});
-			childProc.stderr.on('data', buffer => console.error(buffer.toString()));
-			childProc.on('exit', (code, signal) => {
-				console.log(`${command} completed with ${code}:${signal}`);
-				if (code !== 0) {
-					reject(`${command} failed with ${code || signal}`);
-				} else {
-					resolve(Buffer.concat(resultBuffers).toString().trim());
-				}
-			});
-		});
-	};
-module.exports = {
-	exec: execPromise,
-	spawn: spawnPromise
+const childProcess = require('child_process');
+
+/**
+ * @typedef ChildProcessBuffers
+ * @type {object}
+ * @property {string} stdout - Standard output result string
+ * @property {string} stderr - Standard error resulf string
+ */
+
+/**
+ * Wraps spawned child process in a promise.
+ * @param {string} command Command to run
+ * @param {string[]} argsarray Array of command-line arguments
+ * @param {object} envOptions child_process.spawn option object
+ * @return {ChildProcessBuffers} Process's stderr output
+ */
+module.exports = function spawnPromise(command, argsarray, envOptions) {
+  return new Promise((resolve, reject) => {
+    const childProc = childProcess.spawn(
+      command,
+      argsarray,
+      envOptions || { env: process.env, cwd: process.cwd() }
+    );
+
+    const stdoutBuffer = [];
+    const stderrBuffer = [];
+
+    childProc.stdout.on('data', (buffer) => {
+      stdoutBuffer.push(buffer);
+    });
+
+    childProc.stderr.on('data', (buffer) => {
+      stderrBuffer.push(buffer);
+    });
+
+    childProc.on('exit', (code, signal) => {
+      if (code !== 0) {
+        reject(`${command} failed with ${code || signal}`);
+      } else {
+        resolve({
+          stdout: Buffer.concat(stdoutBuffer).toString().trim(),
+          stderr: Buffer.concat(stderrBuffer).toString().trim()
+        });
+      }
+    });
+  });
 };
