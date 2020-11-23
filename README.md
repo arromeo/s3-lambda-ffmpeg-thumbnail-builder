@@ -15,3 +15,7 @@ The steps below are loosely based off of this tutorial: [Using AWS Lambda with A
 7. Create a zip file of source code and upload it to the lambda
 8. Test by uploading a video file to pre-processing bucket.
 9. Post-processing bucket should contain two thumbnails if all went well
+
+### Acknowledgements
+
+This code was originally forked from this repo: [s3-lambda-ffmpeg-thumbnail-builder](https://github.com/serverlesspub/s3-lambda-ffmpeg-thumbnail-builder). I ended up changing a lot of the code in order to add the features that I wanted like the midpoint and aspect ratio features, but the repo was a great jumping off point.
